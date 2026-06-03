@@ -1,0 +1,73 @@
+name: portfolio-check
+
+# 노트북 무관. GitHub 서버가 정해진 시각에 자동 실행.
+on:
+  schedule:
+    - cron: '30 22 * * *'    # 매일 07:30 KST (UTC 22:30) - 장 시작 전 점검
+    - cron: '30 21 * * 2-6'  # 평일 06:30 KST (UTC 21:30) - 미장 마감 후
+  workflow_dispatch: {}       # 수동 실행 버튼 (Actions 탭에서 Run)
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Claude Code 설치
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: 점검 실행 (/check)
+        id: check
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          OUT=$(claude -p "/check" --allowedTools "Read" "Write" "WebSearch" "WebFetch" 2>&1 || true)
+          printf '%s' "$OUT" > check_out.txt
+          echo "--- check 결과 ---"; cat check_out.txt
+
+      - name: 대시보드 JSON 생성 (/export)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          RAW=$(claude -p "/export" --allowedTools "Read" "Write" 2>&1 || true)
+          printf '%s' "$RAW" > raw.txt
+          python3 - <<'PY'
+          import json
+          t=open('raw.txt',encoding='utf-8').read()
+          i=t.find('{'); j=t.rfind('}')
+          if i<0 or j<=i:
+              print('JSON 추출 실패'); open('dashboard.json','w').write('{"holdings":[]}')
+          else:
+              s=t[i:j+1]
+              try: json.loads(s); open('dashboard.json','w',encoding='utf-8').write(s); print('JSON OK')
+              except Exception as e: print('검증 실패',e); open('dashboard.json','w').write('{"holdings":[]}')
+          PY
+
+      - name: Gist 업로드
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+        run: |
+          PAYLOAD=$(python3 -c "import json;c=open('dashboard.json',encoding='utf-8').read();print(json.dumps({'files':{'dashboard.json':{'content':c}}}))")
+          curl -s -X PATCH "https://api.github.com/gists/$GIST_ID" \
+            -H "Authorization: token $GIST_TOKEN" \
+            -H "User-Agent: pf-agent" \
+            -H "Accept: application/vnd.github+json" \
+            -d "$PAYLOAD" > /dev/null && echo "Gist 푸시 완료" || echo "Gist 푸시 실패"
+
+      - name: 텔레그램 알림
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT }}
+        run: |
+          MSG=$(cat check_out.txt)
+          MSG="${MSG:0:4000}"
+          curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
+            --data-urlencode "chat_id=$TG_CHAT" \
+            --data-urlencode "text=$MSG" > /dev/null && echo "텔레그램 전송 완료" || echo "텔레그램 실패"
