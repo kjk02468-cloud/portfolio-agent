@@ -1,0 +1,206 @@
+<!--
+═══════════════════════════════════════════════════════════
+ JACK1 전략 레이어 애드온
+ 설치: 이 파일에서 <script>...</script> 부분 전체를 복사해서
+       JACK1 html 파일의  </body>  바로 위에 붙여넣으면 끝.
+ (JACK1 원본 코드는 안 건드림. 탭 하나 추가됨: "전략단계")
+ 기능: 0~4단계 보드 · 킬신호 · AI capex 집중도 · 밸류체인 로테이션 · 에이전트 싱크
+ 데이터: 단계정보는 localStorage('j1_stagemeta')에 종목별 저장. 가격/수량은 JACK1 그대로.
+═══════════════════════════════════════════════════════════
+-->
+<script>
+(function(){
+const SX_CHAIN=["GPU","메모리","패키징","광학/연결","전력","냉각","클라우드","에너지"];
+const SX_SUB={GPU:'NVDA',메모리:'MU',패키징:'CoWoS',"광학/연결":'CRDO·ALAB',전력:'VICR·MPWR',냉각:'VRT·MOD',클라우드:'NBIS·CRWV',에너지:'GEV·BE',양자:'IONQ'};
+const SC=['#64748b','#4a9eff','#10b981','#d9a943','#f5733f'];
+const SN=['관찰','바닥/신호','점화/급등','런업/촉매','폭발/고점'];
+let meta=JSON.parse(localStorage.getItem('j1_stagemeta')||'{}');
+let agent=JSON.parse(localStorage.getItem('j1_agent')||'null');
+function saveMeta(){localStorage.setItem('j1_stagemeta',JSON.stringify(meta));}
+function m(tk){return meta[tk]||(meta[tk]={stage:0,kill:false,chain:'',money:'AI capex',note:''});}
+function W(h){try{return getWeight(h);}catch(e){return 0;}}
+
+/* ---- inject CSS ---- */
+const css=document.createElement('style');
+css.textContent=`
+#tab-content-7 .sx-conc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:20px;margin-bottom:18px}
+#tab-content-7 .sx-bar{height:10px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;display:flex;margin-top:10px}
+#tab-content-7 .sx-grp{margin-bottom:16px}
+#tab-content-7 .sx-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#tab-content-7 .sx-chip{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;padding:3px 10px;border-radius:7px}
+#tab-content-7 .sx-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:10px}
+#tab-content-7 .sx-card.kill{border-color:rgba(245,96,77,.4)}
+#tab-content-7 .sx-sel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#e2e8f0;padding:7px 9px;font-size:12px;font-family:inherit;outline:none}
+#tab-content-7 .sx-fnode{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:11px 14px}
+#tab-content-7 .sx-fnode.has{border-color:rgba(16,185,129,.3)}
+#tab-content-7 input.sx-note{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#e2e8f0;padding:8px 10px;font-size:12px;width:100%;outline:none;font-family:inherit}
+#tab-content-7 .sx-url{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#e2e8f0;padding:11px 13px;font-size:13px;width:100%;outline:none;font-family:'DM Mono',monospace}
+`;
+document.head.appendChild(css);
+
+/* ---- inject nav tab ---- */
+function injectTab(){
+  const t6=document.getElementById('tab-6');
+  if(!t6||document.getElementById('tab-7'))return;
+  const nav=t6.parentNode;
+  const b=document.createElement('div');
+  b.id='tab-7';b.className='tab-btn';
+  b.style.cssText="padding:14px 20px;font-size:15px;font-family:'Syne',sans-serif";
+  b.textContent='전략단계';
+  b.onclick=sxShow;
+  nav.appendChild(b);
+
+  const sec=document.createElement('div');
+  sec.id='tab-content-7';sec.className='tab-content';
+  sec.style.cssText='display:none;max-width:1200px;margin:0 auto;padding:24px 24px 60px;position:relative;z-index:1';
+  document.getElementById('tab-content-6').after(sec);
+}
+
+/* ---- show/hide hook ---- */
+function sxHideAll(){for(let i=0;i<8;i++){const e=document.getElementById('tab-content-'+i);if(e)e.style.display='none';const t=document.getElementById('tab-'+i);if(t)t.classList.remove('tab-active');}}
+function sxShow(){sxHideAll();document.getElementById('tab-content-7').style.display='block';document.getElementById('tab-7').classList.add('tab-active');sxRender();}
+// 다른 탭 클릭 시 7번 숨기기
+if(typeof switchTab==='function'){const _o=switchTab;window.switchTab=function(i){const e=document.getElementById('tab-content-7');if(e)e.style.display='none';const t=document.getElementById('tab-7');if(t)t.classList.remove('tab-active');_o(i);};}
+
+/* ---- render ---- */
+function sxRender(){
+  const sec=document.getElementById('tab-content-7');
+  const pf=(typeof portfolio!=='undefined')?portfolio:[];
+  // concentration
+  let ai=0,non=0;
+  pf.forEach(h=>{const mm=m(h.ticker);const w=W(h);(mm.money==='AI capex'?ai+=w:non+=w);});
+  const tot=ai+non||1;const aip=Math.round(ai/tot*100),np=100-aip;
+  const col=aip>=80?'#f5604d':aip>=70?'#d9a943':'#10b981';
+  const cmsg=aip>=80?'🔴 80%↑ 과집중 — 다른 자금줄로 분산':aip>=70?'🟡 높음 — capex 추세 주시':'🟢 분산 양호';
+
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+    <div><h2 style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800">전략 단계 보드</h2>
+    <p style="color:#64748b;font-size:13px;margin-top:4px">반응(실적) + 예측(밸류체인) · 종목별 단계·킬신호 관리</p></div></div>`;
+
+  // concentration card
+  html+=`<div class="sx-conc">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <span style="font-size:11px;letter-spacing:.1em;color:#475569;text-transform:uppercase">AI capex 집중도</span>
+      <span class="mono" style="font-size:24px;font-weight:700;color:${col}">${aip}%</span></div>
+    <div class="sx-bar"><i style="width:${aip}%;background:${col};height:100%"></i><i style="width:${np}%;background:#4a9eff;opacity:.6;height:100%"></i></div>
+    <div style="display:flex;justify-content:space-between;margin-top:9px;font-size:12px"><span style="color:${col}">${cmsg}</span><span style="color:#475569">비-AI ${np}%</span></div></div>`;
+
+  if(!pf.length){html+='<div style="color:#475569;font-size:13px;padding:20px">JACK1 Overview에서 종목을 먼저 추가하세요. 그 종목들이 여기 단계 보드에 나타납니다.</div>';sec.innerHTML=html;return;}
+
+  // stage groups 1-4 then 0
+  const order=[1,2,3,4,0];
+  order.forEach(s=>{
+    const hs=pf.filter(h=>(+m(h.ticker).stage)===s);
+    if(s===0&&!hs.length)return;
+    const sum=hs.reduce((a,h)=>a+W(h),0);
+    html+=`<div class="sx-grp"><div class="sx-hd">
+      <span class="sx-chip" style="color:${SC[s]};background:${SC[s]}22">${s}단계</span>
+      <span style="font-size:13px;font-weight:600">${SN[s]}</span>
+      <span class="mono" style="margin-left:auto;font-size:12px;color:#64748b">${hs.length}종목 · ${sum.toFixed(1)}%</span></div>`;
+    if(!hs.length)html+='<div style="color:#334155;font-size:12px;padding:6px 2px">— 없음</div>';
+    hs.forEach(h=>{const mm=m(h.ticker);html+=sxCard(h,mm);});
+    html+='</div>';
+  });
+
+  // value chain
+  html+=`<div style="margin:26px 0 12px;font-family:'Syne',sans-serif;font-size:18px;font-weight:700">밸류체인 로테이션</div>`;
+  html+=`<div style="display:flex;flex-direction:column;gap:0;margin-bottom:8px">`;
+  SX_CHAIN.forEach((node,i)=>{
+    const mine=pf.filter(h=>m(h.ticker).chain===node);
+    const has=mine.length>0;
+    let c='#334155';if(has){const avg=mine.reduce((a,h)=>a+ +m(h.ticker).stage,0)/mine.length;c=SC[Math.round(avg)]||'#10b981';}
+    html+=`<div class="sx-fnode ${has?'has':''}">
+      <span style="width:11px;height:11px;border-radius:50%;background:${c};${has?'box-shadow:0 0 8px '+c:''};flex-shrink:0"></span>
+      <div><div style="font-size:13px;font-weight:600">${node}</div><div style="font-size:10px;color:#475569">${SX_SUB[node]||''}</div></div>
+      <div style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${mine.map(h=>`<span class="mono" style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(16,185,129,.16);color:#10b981">${h.ticker}</span>`).join('')}</div></div>`;
+    if(i<SX_CHAIN.length-1)html+=`<div style="height:12px;width:2px;background:rgba(255,255,255,.1);margin-left:19px"></div>`;
+  });
+  html+=`</div><div style="font-size:11px;color:#334155;margin-bottom:24px">● 색점=보유 종목 위치 · 돈은 상류(위)→하류(아래)로 로테이션</div>`;
+
+  // agent sync
+  html+=`<div style="margin:6px 0 12px;font-family:'Syne',sans-serif;font-size:18px;font-weight:700">에이전트 싱크</div>
+    <div class="sx-conc">
+      <div style="font-size:11px;letter-spacing:.08em;color:#475569;text-transform:uppercase;margin-bottom:8px">dashboard.json URL (Gist Raw)</div>
+      <input class="sx-url" id="sx-url" placeholder="https://gist.../raw/dashboard.json" value="${localStorage.getItem('j1_agenturl')||''}">
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button onclick="sxFetch()" class="btn-gold" style="flex:1">에이전트에서 불러오기</button>
+      </div>
+      <div id="sx-msg" style="font-size:12px;margin-top:10px;min-height:16px"></div>
+      ${agent?sxAgentBox():''}
+      <div style="font-size:11px;color:#334155;margin-top:10px;line-height:1.6">클로드 코드가 /export로 만든 JSON 주소. 불러오면 종목별 단계·킬신호·메모가 자동 갱신됨.</div>
+    </div>`;
+
+  sec.innerHTML=html;
+}
+
+function sxCard(h,mm){
+  const mc=mm.money==='AI capex'?'#4a9eff':(mm.money==='국방'||mm.money==='정책/희토류')?'#d9a943':'#94a3b8';
+  return `<div class="sx-card ${mm.kill?'kill':''}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span class="mono" style="font-size:18px;font-weight:700;color:#c9a84c">${h.ticker}</span>
+      ${mm.kill?'<span style="width:8px;height:8px;border-radius:50%;background:#f5604d;box-shadow:0 0 7px #f5604d"></span>':''}
+      <span class="mono" style="margin-left:auto;font-size:15px;font-weight:700;color:${SC[+mm.stage]}">${W(h).toFixed(1)}%</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <select class="sx-sel" onchange="sxSet('${h.ticker}','stage',+this.value)">
+        ${[0,1,2,3,4].map(s=>`<option value="${s}" ${+mm.stage===s?'selected':''}>${s}단계·${SN[s]}</option>`).join('')}
+      </select>
+      <select class="sx-sel" onchange="sxSet('${h.ticker}','chain',this.value)">
+        <option value="">체인—</option>
+        ${SX_CHAIN.concat(['기타(비-AI)']).map(c=>`<option ${mm.chain===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <select class="sx-sel" onchange="sxSet('${h.ticker}','money',this.value)">
+        ${['AI capex','국방','정책/희토류','기타'].map(c=>`<option ${mm.money===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#f5604d;cursor:pointer">
+        <input type="checkbox" ${mm.kill?'checked':''} onchange="sxSet('${h.ticker}','kill',this.checked)" style="width:auto"> 킬신호
+      </label>
+    </div>
+    <input class="sx-note" placeholder="메모 (예: 6/1 실적 판정)" value="${(mm.note||'').replace(/"/g,'&quot;')}" onchange="sxSet('${h.ticker}','note',this.value)">
+  </div>`;
+}
+function sxAgentBox(){
+  let h=`<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+    <div style="font-size:11px;color:#10b981;letter-spacing:.08em;margin-bottom:8px">📡 에이전트 데이터 (${agent.updated||''})</div>`;
+  if(agent.rotation)h+=`<div style="font-size:13px;color:#94a3b8;margin-bottom:6px">자금 로테이션: <b style="color:#10b981">${agent.rotation.now||''}</b> → <b style="color:#d9a943">${agent.rotation.next||''}</b></div>`;
+  if(agent.alerts&&agent.alerts.length)h+=agent.alerts.map(a=>`<div style="font-size:12px;color:#f5604d;margin-bottom:4px">⚠️ ${a}</div>`).join('');
+  h+='</div>';return h;
+}
+
+window.sxSet=function(tk,k,v){m(tk)[k]=v;saveMeta();if(k==='stage'||k==='chain'||k==='kill')sxRender();};
+window.sxFetch=async function(){
+  const url=document.getElementById('sx-url').value.trim();
+  const msg=document.getElementById('sx-msg');
+  if(!url){msg.innerHTML='<span style="color:#f5604d">URL을 입력하세요</span>';return;}
+  localStorage.setItem('j1_agenturl',url);
+  msg.innerHTML='<span style="color:#64748b">불러오는 중...</span>';
+  try{
+    const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now());
+    const j=await r.json();
+    if(Array.isArray(j.holdings))j.holdings.forEach(x=>{if(!x.ticker)return;const mm=m(x.ticker);if(x.stage!=null)mm.stage=x.stage;if(x.chain!=null)mm.chain=x.chain;if(x.money!=null)mm.money=x.money;if(x.kill!=null)mm.kill=x.kill;if(x.note!=null)mm.note=x.note;});
+    agent={updated:j.updated,rotation:j.rotation,alerts:j.alerts};
+    localStorage.setItem('j1_agent',JSON.stringify(agent));saveMeta();
+    msg.innerHTML='<span style="color:#10b981">✓ 에이전트 데이터 적용됨</span>';sxRender();
+  }catch(e){msg.innerHTML='<span style="color:#f5604d">✗ 실패: '+e.message+' (URL·공개여부 확인)</span>';}
+};
+
+/* ---- silent auto-fetch (input DOM 없어도 동작) ---- */
+async function sxAutoFetch(){
+  const url=localStorage.getItem('j1_agenturl');if(!url)return;
+  try{
+    const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now());
+    const j=await r.json();
+    if(Array.isArray(j.holdings))j.holdings.forEach(x=>{if(!x.ticker)return;const mm=m(x.ticker);if(x.stage!=null)mm.stage=x.stage;if(x.chain!=null)mm.chain=x.chain;if(x.money!=null)mm.money=x.money;if(x.kill!=null)mm.kill=x.kill;if(x.note!=null)mm.note=x.note;});
+    agent={updated:j.updated,rotation:j.rotation,alerts:j.alerts};
+    localStorage.setItem('j1_agent',JSON.stringify(agent));saveMeta();
+    if(document.getElementById('tab-content-7')&&document.getElementById('tab-content-7').style.display!=='none')sxRender();
+  }catch(e){}
+}
+
+/* ---- init after JACK1 loads ---- */
+window.addEventListener('load',function(){
+  setTimeout(function(){ injectTab(); sxAutoFetch(); },300);          // 열 때 자동 최신화
+  setInterval(sxAutoFetch,300000);                                    // 5분마다 자동 갱신
+});
+})();
+</script>

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#070a0f">
+<title>STAGE • 전략 포트폴리오</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070a0f; --bg2:#0d1219; --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13);
+  --txt:#e7edf3; --dim:#7c8a9c; --dim2:#4a5868;
+  --s0:#64748b; --s1:#4a9eff; --s2:#10b981; --s3:#d9a943; --s4:#f5733f;
+  --red:#f5604d; --green:#10b981; --gold:#d9a943;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Apple SD Gothic Neo','Malgun Gothic',-apple-system,sans-serif;
+  background:var(--bg); color:var(--txt);
+  min-height:100vh; padding-bottom:84px;
+  background-image:
+    linear-gradient(rgba(255,255,255,.014) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.014) 1px,transparent 1px);
+  background-size:26px 26px;
+}
+.mono{font-family:'JetBrains Mono',monospace}
+.disp{font-family:'Bricolage Grotesque',sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:0 14px}
+
+/* header */
+header{position:sticky;top:0;z-index:40;backdrop-filter:blur(18px);background:rgba(7,10,15,.82);border-bottom:1px solid var(--line)}
+.hd{display:flex;align-items:center;justify-content:space-between;height:56px}
+.logo{display:flex;align-items:center;gap:9px}
+.logo .mk{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#10b981,#0a7d57);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+.logo .nm{font-family:'Bricolage Grotesque';font-weight:800;font-size:19px;letter-spacing:-.5px;line-height:1}
+.logo .sb{font-size:9px;color:var(--s2);letter-spacing:.22em;line-height:1;margin-top:2px}
+.synced{font-size:10px;color:var(--dim);display:flex;align-items:center;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--s2);box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:pl 2.4s infinite}
+@keyframes pl{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.45)}50%{box-shadow:0 0 0 5px rgba(16,185,129,0)}}
+
+/* goal strip */
+.goal{display:flex;justify-content:space-between;align-items:center;padding:13px 0 4px}
+.goal .t{font-size:11px;color:var(--dim);letter-spacing:.08em}
+.goal .v{font-family:'JetBrains Mono';font-size:13px;color:var(--gold);font-weight:700}
+
+/* concentration */
+.conc{background:var(--bg2);border:1px solid var(--line);border-radius:15px;padding:15px;margin-top:8px}
+.conc .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+.conc .lbl{font-size:11px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.conc .big{font-family:'JetBrains Mono';font-size:22px;font-weight:700}
+.bar{height:9px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
+.bar i{height:100%;display:block}
+.conc .ck{font-size:11px;margin-top:9px;display:flex;align-items:center;gap:6px}
+
+/* tabs (bottom) */
+nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(10,14,20,.94);backdrop-filter:blur(20px);border-top:1px solid var(--line2)}
+.tabs .in{max-width:520px;margin:0 auto;display:flex}
+.tb{flex:1;padding:11px 0 calc(11px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--dim2);border:none;background:none;font-family:inherit}
+.tb.on{color:var(--s2)}
+.tb svg{width:21px;height:21px}
+.tb span{font-size:10px;letter-spacing:.02em}
+
+section{display:none;padding-top:14px;animation:fu .3s ease}
+section.on{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* stage board */
+.sgrp{margin-bottom:14px}
+.shd{display:flex;align-items:center;gap:9px;margin-bottom:9px;padding-left:2px}
+.schip{font-family:'JetBrains Mono';font-size:12px;font-weight:700;padding:3px 9px;border-radius:7px}
+.stitle{font-size:13px;font-weight:600}
+.ssum{margin-left:auto;font-family:'JetBrains Mono';font-size:12px;color:var(--dim)}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:9px;position:relative;cursor:pointer;transition:border-color .15s,transform .1s}
+.card:active{transform:scale(.99)}
+.card.kill{border-color:rgba(245,96,77,.4);box-shadow:0 0 0 1px rgba(245,96,77,.12)}
+.crow1{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.tk{font-family:'JetBrains Mono';font-size:18px;font-weight:700;letter-spacing:-.5px}
+.wt{margin-left:auto;font-family:'JetBrains Mono';font-size:15px;font-weight:700}
+.killdot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 7px var(--red)}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.pill{font-size:10.5px;padding:2.5px 8px;border-radius:6px;background:rgba(255,255,255,.05);color:var(--dim);border:1px solid var(--line)}
+.pill.chain{color:var(--s2);border-color:rgba(16,185,129,.25);background:rgba(16,185,129,.07)}
+.pill.ai{color:var(--s1)}
+.pill.nonai{color:var(--gold)}
+.note{font-size:12px;color:var(--dim);line-height:1.5}
+.empty{color:var(--dim2);font-size:12px;padding:10px 2px}
+
+/* chain */
+.chain-now{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.chain-now .k{font-size:11px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:7px}
+.chain-now .l{display:flex;align-items:center;gap:8px;font-size:14px}
+.flow{display:flex;flex-direction:column;gap:0}
+.fnode{display:flex;align-items:center;gap:12px;padding:11px 13px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;position:relative}
+.fnode.has{border-color:rgba(16,185,129,.3)}
+.fnode .fdot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.fnode .fl{font-size:13px;font-weight:600}
+.fnode .fs{font-size:10px;color:var(--dim2);margin-top:1px}
+.fnode .ftk{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.fnode .ftk span{font-family:'JetBrains Mono';font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;background:rgba(16,185,129,.16);color:var(--s2)}
+.fconn{height:14px;width:2px;background:var(--line2);margin-left:19px}
+
+/* calendar */
+.cal{display:flex;flex-direction:column;gap:8px}
+.cev{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.cev .dd{font-family:'JetBrains Mono';font-weight:700;font-size:13px;min-width:50px;text-align:center;padding:5px 6px;border-radius:8px;background:rgba(255,255,255,.05)}
+.cev .ce{font-size:13px;font-weight:600}
+.cev .cdate{font-family:'JetBrains Mono';font-size:11px;color:var(--dim);margin-top:1px}
+.cev .ctag{margin-left:auto;font-size:10px;padding:2px 8px;border-radius:6px}
+
+/* alerts */
+.alert{display:flex;gap:10px;align-items:flex-start;background:rgba(245,96,77,.08);border:1px solid rgba(245,96,77,.22);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:13px;line-height:1.5}
+
+/* sync */
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:11px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:7px}
+input,textarea{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:11px;color:var(--txt);padding:12px 14px;font-family:'JetBrains Mono';font-size:13px;outline:none}
+input:focus,textarea:focus{border-color:var(--s2)}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+.btn{width:100%;padding:14px;border-radius:12px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;background:var(--s2);color:#04130d}
+.btn:active{transform:scale(.99)}
+.btn.ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid var(--line2)}
+.btn.gold{background:linear-gradient(135deg,#d9a943,#e8c97a);color:#1a1304}
+.syncmsg{font-size:12px;margin-top:10px;min-height:16px}
+.hint{font-size:11px;color:var(--dim2);line-height:1.6;margin-top:6px}
+
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);z-index:100;display:none;align-items:flex-end}
+.ov.on{display:flex}
+.sheet{background:#0f151d;border-top:1px solid var(--line2);border-radius:22px 22px 0 0;width:100%;max-width:520px;margin:0 auto;padding:22px 18px calc(22px + env(safe-area-inset-bottom));max-height:92vh;overflow-y:auto;animation:up .26s ease}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet h3{font-family:'Bricolage Grotesque';font-size:19px;margin:0 0 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:11px;color:var(--txt);padding:12px 14px;font-family:inherit;font-size:14px;outline:none}
+select:focus{border-color:var(--s2)}
+.toggle{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--line2);border-radius:11px;padding:12px 14px}
+.tg{width:46px;height:27px;border-radius:14px;background:rgba(255,255,255,.12);position:relative;transition:background .2s;cursor:pointer;flex-shrink:0}
+.tg.on{background:var(--red)}
+.tg i{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:left .2s}
+.tg.on i{left:22px}
+.fab{position:fixed;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:45;width:52px;height:52px;border-radius:16px;background:var(--s2);color:#04130d;border:none;font-size:26px;font-weight:300;box-shadow:0 8px 24px rgba(16,185,129,.35);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.del{color:var(--red);background:rgba(245,96,77,.1);border:1px solid rgba(245,96,77,.25);border-radius:11px;padding:12px;width:100%;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px}
+</style>
+</head>
+<body>
+
+<header><div class="wrap hd">
+  <div class="logo">
+    <div class="mk">◆</div>
+    <div><div class="nm">STAGE</div><div class="sb">STRATEGY PF</div></div>
+  </div>
+  <div class="synced"><span class="dot"></span><span id="synctime">로컬 데이터</span></div>
+</div></header>
+
+<div class="wrap">
+  <div class="goal"><span class="t" id="goalt">목표</span><span class="v" id="goalv">29.6까지 5억</span></div>
+
+  <!-- STAGES -->
+  <section id="sec-stage" class="on">
+    <div class="conc">
+      <div class="row"><span class="lbl">AI capex 집중도</span><span class="big mono" id="concv">—</span></div>
+      <div class="bar" id="concbar"></div>
+      <div class="ck" id="conck"></div>
+    </div>
+    <div id="stageboard" style="margin-top:16px"></div>
+  </section>
+
+  <!-- CHAIN -->
+  <section id="sec-chain">
+    <div class="chain-now">
+      <div class="k">자금 로테이션</div>
+      <div class="l"><span style="color:var(--s2);font-weight:700" id="rot-now">—</span>
+        <span style="color:var(--dim2)">→ 다음</span>
+        <span style="color:var(--gold);font-weight:700" id="rot-next">—</span></div>
+    </div>
+    <div class="flow" id="chainflow"></div>
+    <div class="hint" style="margin-top:12px">● 초록 = 내 보유 종목 위치 · 돈은 왼쪽(상류)에서 오른쪽(하류)으로 흐름</div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section id="sec-cal">
+    <div id="alertbox"></div>
+    <div class="cal" id="callist"></div>
+  </section>
+
+  <!-- SYNC -->
+  <section id="sec-sync">
+    <div class="fld">
+      <label>에이전트 JSON URL (Gist Raw 등)</label>
+      <input id="syncurl" placeholder="https://gist.../raw/dashboard.json" inputmode="url">
+      <div class="hint">클로드 코드 에이전트가 /export로 만든 dashboard.json의 주소. 넣고 불러오면 폰에서 PC 분석을 봄.</div>
+    </div>
+    <button class="btn gold" onclick="fetchSync()">에이전트에서 불러오기</button>
+    <div class="syncmsg" id="syncmsg"></div>
+
+    <div class="fld" style="margin-top:22px">
+      <label>또는 JSON 직접 붙여넣기</label>
+      <textarea id="pastejson" placeholder='{"holdings":[...]}'></textarea>
+    </div>
+    <button class="btn ghost" onclick="loadPasted()">붙여넣은 JSON 적용</button>
+
+    <div style="margin-top:22px;display:flex;gap:10px">
+      <button class="btn ghost" style="flex:1" onclick="exportJson()">현재 내보내기</button>
+      <button class="btn ghost" style="flex:1" onclick="resetData()">기본값 복원</button>
+    </div>
+    <div class="syncmsg" id="expmsg"></div>
+    <div class="hint" style="margin-top:18px">데이터는 이 기기(브라우저)에 저장돼. 폰·PC 동기화는 위 에이전트 URL로. 민감정보(매수가 등)는 공개 URL에 올리지 마.</div>
+  </section>
+</div>
+
+<button class="fab" onclick="openEdit(-1)">+</button>
+
+<!-- bottom tabs -->
+<nav class="tabs"><div class="in">
+  <button class="tb on" data-sec="stage" onclick="tab('stage')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span>단계</span></button>
+  <button class="tb" data-sec="chain" onclick="tab('chain')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="19" cy="18" r="2.4"/><path d="M7 7.6 10 10.4M14 13.6 17 16.4"/></svg>
+    <span>체인</span></button>
+  <button class="tb" data-sec="cal" onclick="tab('cal')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9h18M8 2.5v4M16 2.5v4"/></svg>
+    <span>일정</span></button>
+  <button class="tb" data-sec="sync" onclick="tab('sync')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-8-5M3 12a9 9 0 0 1 9-9 9 9 0 0 1 8 5"/><path d="M21 4v4h-4M3 20v-4h4"/></svg>
+    <span>싱크</span></button>
+</div></nav>
+
+<!-- edit sheet -->
+<div class="ov" id="ov" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <h3 id="sheetttl">종목 편집</h3>
+    <input type="hidden" id="e-idx">
+    <div class="fld"><label>티커</label><input id="e-tk" placeholder="NBIS" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="grid2">
+      <div class="fld"><label>단계</label>
+        <select id="e-stage">
+          <option value="0">0 · 관찰</option><option value="1">1 · 바닥/신호</option>
+          <option value="2">2 · 점화</option><option value="3">3 · 런업</option>
+          <option value="4">4 · 폭발</option>
+        </select></div>
+      <div class="fld"><label>비중 %</label><input id="e-wt" type="number" inputmode="decimal" placeholder="15"></div>
+    </div>
+    <div class="fld"><label>테마</label><input id="e-theme" placeholder="AI 클라우드" style="font-family:inherit"></div>
+    <div class="grid2">
+      <div class="fld"><label>체인 위치</label>
+        <select id="e-chain" style="font-family:inherit">
+          <option value="">—</option>
+          <option>GPU</option><option>메모리</option><option>패키징</option>
+          <option>광학/연결</option><option>전력</option><option>냉각</option>
+          <option>클라우드</option><option>에너지</option><option>기타(비-AI)</option>
+        </select></div>
+      <div class="fld"><label>자금줄</label>
+        <select id="e-money" style="font-family:inherit">
+          <option>AI capex</option><option>국방</option><option>정책/희토류</option><option>기타</option>
+        </select></div>
+    </div>
+    <div class="fld"><label>메모</label><input id="e-note" placeholder="한 줄" style="font-family:inherit"></div>
+    <div class="fld"><div class="toggle"><span style="font-size:13px">🔴 킬신호 발동</span><div class="tg" id="e-kill" onclick="this.classList.toggle('on')"><i></i></div></div></div>
+    <button class="btn" onclick="saveHolding()">저장</button>
+    <button class="del" id="delbtn" onclick="delHolding()">이 종목 삭제</button>
+  </div>
+</div>
+
+<script>
+/* ---------- default data = 현재 전략 포트 ---------- */
+const DEFAULT={
+  updated:"2026-06-03", goal:"29.6까지 5억",
+  holdings:[
+    {ticker:"USAR",stage:1,weight:20,theme:"희토류/핵심광물",chain:"기타(비-AI)",money:"정책/희토류",kill:false,note:"DOE $19.3M 파일럿 펀딩 선정. DoC $1.6B 확정 계약 대기 중. 킬신호 없음."},
+    {ticker:"IONQ",stage:2,weight:35,theme:"양자컴퓨팅",chain:"기타(비-AI)",money:"국방·상업",kill:false,note:"Q1 $64.7M +755%YoY, FY26 가이던스 $270M. SkyWater $1.8B 합병 주주승인 완료(수직통합 가속)."},
+    {ticker:"NBIS",stage:3,weight:13,theme:"AI 클라우드",chain:"클라우드",money:"AI capex",kill:false,note:"Q1 $399M +684%YoY 흑전. ATH $274.80. Situational Awareness 5.6% 지분($2.6B). 6/4 NEBX→NBIS 원복."},
+    {ticker:"VICR",stage:3,weight:10,theme:"전력전달(VPD)",chain:"전력",money:"AI capex",kill:false,note:"Q2 가이던스 $142M 상향(+13%). ⚠️ CFO 5,000주 내부자 매도(6/1). 4단계 판정 전 주시."},
+    {ticker:"MRCY",stage:3,weight:7,theme:"방산 전자",chain:"기타(비-AI)",money:"국방",kill:false,note:"Blue Raven 1,000대 RTBX06 다년 계약 수주. Goldman PT $68(Sell)↑, Truist PT $109(Buy)↑."},
+    {ticker:"CRDO",stage:4,weight:0,theme:"AI 연결",chain:"광학/연결",money:"AI capex",kill:false,note:"4-A 세속대장 확정(6/3). EPS $1.16 비트(+10.5%), 매출 $437M 소폭 미스(-0.8%). PT 8개+ 전원 상향. ride."},
+    {ticker:"ALAB",stage:4,weight:15,theme:"AI 인터커넥트",chain:"광학/연결",money:"AI capex",kill:false,note:"4-A 세속대장. Computex Scorpio X-Series 320레인 데모. 2H26 생산 램프. 6/4 LABX→ALAB 원복. 8/4 실적."}
+  ],
+  concentration:null,
+  rotation:{now:"AI 클라우드·전력·인터커넥트 (3~4단계)",next:"냉각·에너지 (1~2단계 스카우트)"},
+  calendar:[
+    {date:"2026-06-03",event:"AVGO 실적 (AI capex 73% 방향타) — 결과 대기",type:"leader"},
+    {date:"2026-06-04",event:"LABX→ALAB·NEBX→NBIS 원복 데드라인 KST 05:00",type:"earnings"},
+    {date:"2026-06-05",event:"고용보고서 NFP (고멀티플 압박)",type:"macro"},
+    {date:"2026-06-10",event:"CPI (최대 단일 변동일)",type:"macro"},
+    {date:"2026-06-17",event:"FOMC + 점도표 + 파월 (6월 최대)",type:"macro"},
+    {date:"2026-06-25",event:"MU 실적 (AI 슈퍼사이클 방향타)",type:"leader"},
+    {date:"2026-07-28",event:"VICR Q2 실적 (추정)",type:"earnings"},
+    {date:"2026-08-04",event:"ALAB Q2 실적 (추정)",type:"earnings"},
+    {date:"2026-08-06",event:"NBIS Q2 실적 (추정)",type:"earnings"},
+    {date:"2026-08-10",event:"MRCY Q4 실적 (추정)",type:"earnings"}
+  ],
+  alerts:["AVGO 오늘 밤 실적 — AI $10.7B 기준선. 미스 시 AI capex 73% 전면 재검토","6/4 KST 05:00 전 LABX→ALAB·NEBX→NBIS 원복 필수 (NFP 통과 전)","VICR CFO 5,000주 내부자 매도(6/1) — 4단계 판정 전 추가 관찰"]
+};
+const CHAIN_ORDER=["GPU","메모리","패키징","광학/연결","전력","냉각","클라우드","에너지"];
+const STAGE_C=['var(--s0)','var(--s1)','var(--s2)','var(--s3)','var(--s4)'];
+const STAGE_N=['0 · 관찰 준비','1 · 바닥 / 신호','2 · 점화 / 급등시작','3 · 런업 / 촉매임박','4 · 폭발 / 고점권'];
+
+let data=load();
+
+function load(){
+  try{const s=localStorage.getItem('stage_pf');if(s)return JSON.parse(s);}catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+function save(){try{localStorage.setItem('stage_pf',JSON.stringify(data));}catch(e){}}
+
+/* ---------- concentration ---------- */
+function calcConc(){
+  if(data.concentration&&data.concentration.ai_capex!=null)return data.concentration;
+  let ai=0,non=0;
+  data.holdings.forEach(h=>{(h.money==='AI capex'?ai+=(+h.weight||0):non+=(+h.weight||0))});
+  const tot=ai+non||1;
+  return {ai_capex:Math.round(ai/tot*100),non_ai:Math.round(non/tot*100)};
+}
+
+/* ---------- render ---------- */
+function render(){
+  document.getElementById('goalv').textContent=data.goal||'—';
+  document.getElementById('synctime').textContent=data.updated&&data.updated!=='기본값'?('싱크 '+data.updated):'로컬 데이터';
+  renderConc();renderStages();renderChain();renderCal();
+}
+function renderConc(){
+  const c=calcConc();
+  document.getElementById('concv').textContent=c.ai_capex+'%';
+  const col=c.ai_capex>=80?'var(--red)':c.ai_capex>=70?'var(--s3)':'var(--s2)';
+  document.getElementById('concv').style.color=col;
+  document.getElementById('concbar').innerHTML=
+    `<i style="width:${c.ai_capex}%;background:${col}"></i><i style="width:${c.non_ai}%;background:var(--s1);opacity:.6"></i>`;
+  const msg=c.ai_capex>=80?'🔴 80%↑ 과집중 — 다른 자금줄로 분산':c.ai_capex>=70?'🟡 높음 — capex 추세 주시':'🟢 분산 양호';
+  document.getElementById('conck').innerHTML=`<span style="color:${col}">${msg}</span><span style="color:var(--dim2);margin-left:auto">비-AI ${c.non_ai}%</span>`;
+  document.getElementById('conck').style.justifyContent='space-between';document.getElementById('conck').style.display='flex';
+}
+function renderStages(){
+  const board=document.getElementById('stageboard');let html='';
+  for(let s=1;s<=4;s++){
+    const hs=data.holdings.filter(h=>+h.stage===s);
+    const sum=hs.reduce((a,h)=>a+(+h.weight||0),0);
+    html+=`<div class="sgrp"><div class="shd">
+      <span class="schip" style="color:${STAGE_C[s]};background:${STAGE_C[s]}1f">${s}단계</span>
+      <span class="stitle">${STAGE_N[s].split('· ')[1]}</span>
+      <span class="ssum">${hs.length}종목 · ${sum}%</span></div>`;
+    if(!hs.length)html+=`<div class="empty">— 없음</div>`;
+    else html+=hs.map(h=>card(h)).join('');
+    html+=`</div>`;
+  }
+  // stage 0 watch
+  const z=data.holdings.filter(h=>+h.stage===0);
+  if(z.length){
+    html+=`<div class="sgrp"><div class="shd"><span class="schip" style="color:${STAGE_C[0]};background:${STAGE_C[0]}1f">0단계</span><span class="stitle">관찰</span><span class="ssum">${z.length}종목</span></div>`;
+    html+=z.map(h=>card(h)).join('')+`</div>`;
+  }
+  board.innerHTML=html;
+}
+function card(h){
+  const i=data.holdings.indexOf(h);
+  const mc=h.money==='AI capex'?'ai':(h.money==='국방'||h.money==='정책/희토류')?'nonai':'';
+  return `<div class="card ${h.kill?'kill':''}" onclick="openEdit(${i})">
+    <div class="crow1">
+      <span class="tk">${h.ticker}</span>
+      ${h.kill?'<span class="killdot"></span>':''}
+      <span class="wt mono" style="color:${STAGE_C[+h.stage]}">${h.weight}%</span>
+    </div>
+    <div class="meta">
+      <span class="pill">${h.theme||'—'}</span>
+      ${h.chain?`<span class="pill chain">${h.chain}</span>`:''}
+      <span class="pill ${mc}">${h.money}</span>
+    </div>
+    ${h.note?`<div class="note">${h.note}</div>`:''}
+  </div>`;
+}
+function renderChain(){
+  document.getElementById('rot-now').textContent=data.rotation?.now||'—';
+  document.getElementById('rot-next').textContent=data.rotation?.next||'—';
+  const flow=document.getElementById('chainflow');let html='';
+  CHAIN_ORDER.forEach((node,i)=>{
+    const mine=data.holdings.filter(h=>h.chain===node);
+    const has=mine.length>0;
+    // heat: where money is (rough) — left already hot, right warming. use holdings stage as proxy
+    let col='var(--dim2)';
+    if(has){const avg=mine.reduce((a,h)=>a+ +h.stage,0)/mine.length;col=STAGE_C[Math.round(avg)]||'var(--s2)';}
+    html+=`<div class="fnode ${has?'has':''}">
+      <span class="fdot" style="background:${col};${has?'box-shadow:0 0 8px '+col:''}"></span>
+      <div><div class="fl">${node}</div><div class="fs">${chainSub(node)}</div></div>
+      <div class="ftk">${mine.map(h=>`<span>${h.ticker}</span>`).join('')}</div>
+    </div>`;
+    if(i<CHAIN_ORDER.length-1)html+=`<div class="fconn"></div>`;
+  });
+  flow.innerHTML=html;
+}
+function chainSub(n){return{GPU:'NVDA',메모리:'MU',패키징:'CoWoS',"광학/연결":'CRDO·ALAB',전력:'VICR·MPWR',냉각:'VRT·MOD',클라우드:'NBIS·CRWV',에너지:'GEV·BE',양자:'IONQ'}[n]||''}
+
+function renderCal(){
+  const ab=document.getElementById('alertbox');
+  ab.innerHTML=(data.alerts&&data.alerts.length)?data.alerts.map(a=>`<div class="alert">⚠️ ${a}</div>`).join(''):'';
+  const list=document.getElementById('callist');
+  const evs=[...(data.calendar||[])].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!evs.length){list.innerHTML='<div class="empty">일정 없음</div>';return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  list.innerHTML=evs.map(e=>{
+    const d=new Date(e.date+'T00:00');
+    const dd=Math.round((d-today)/864e5);
+    const past=dd<0;
+    const tc={earnings:'var(--s2)',leader:'var(--s3)',macro:'var(--s1)'}[e.type]||'var(--dim)';
+    const tl={earnings:'실적',leader:'대장주',macro:'매크로'}[e.type]||'';
+    const ddl=past?'완료':dd===0?'D-DAY':'D-'+dd;
+    const ddc=past?'var(--dim2)':dd<=3?'var(--red)':dd<=7?'var(--s3)':'var(--s2)';
+    return `<div class="cev" style="${past?'opacity:.5':''}">
+      <span class="dd mono" style="color:${ddc}">${ddl}</span>
+      <div><div class="ce">${e.event}</div><div class="cdate">${e.date}</div></div>
+      <span class="ctag" style="color:${tc};background:${tc}1a">${tl}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- tabs ---------- */
+function tab(s){
+  document.querySelectorAll('section').forEach(x=>x.classList.remove('on'));
+  document.getElementById('sec-'+s).classList.add('on');
+  document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.sec===s));
+  window.scrollTo(0,0);
+}
+
+/* ---------- edit ---------- */
+function openEdit(i){
+  document.getElementById('e-idx').value=i;
+  document.getElementById('sheetttl').textContent=i<0?'종목 추가':'종목 편집';
+  document.getElementById('delbtn').style.display=i<0?'none':'block';
+  const h=i>=0?data.holdings[i]:{ticker:'',stage:1,weight:'',theme:'',chain:'',money:'AI capex',kill:false,note:''};
+  document.getElementById('e-tk').value=h.ticker;
+  document.getElementById('e-stage').value=h.stage;
+  document.getElementById('e-wt').value=h.weight;
+  document.getElementById('e-theme').value=h.theme||'';
+  document.getElementById('e-chain').value=h.chain||'';
+  document.getElementById('e-money').value=h.money||'AI capex';
+  document.getElementById('e-note').value=h.note||'';
+  document.getElementById('e-kill').classList.toggle('on',!!h.kill);
+  document.getElementById('ov').classList.add('on');
+}
+function closeSheet(){document.getElementById('ov').classList.remove('on')}
+function saveHolding(){
+  const i=+document.getElementById('e-idx').value;
+  const tk=document.getElementById('e-tk').value.trim().toUpperCase();
+  if(!tk){alert('티커를 입력하세요');return;}
+  const h={ticker:tk,stage:+document.getElementById('e-stage').value,
+    weight:+document.getElementById('e-wt').value||0,
+    theme:document.getElementById('e-theme').value.trim(),
+    chain:document.getElementById('e-chain').value,
+    money:document.getElementById('e-money').value,
+    note:document.getElementById('e-note').value.trim(),
+    kill:document.getElementById('e-kill').classList.contains('on')};
+  if(i<0)data.holdings.push(h);else data.holdings[i]=h;
+  save();render();closeSheet();
+}
+function delHolding(){
+  const i=+document.getElementById('e-idx').value;
+  if(i>=0&&confirm(data.holdings[i].ticker+' 삭제?')){data.holdings.splice(i,1);save();render();closeSheet();}
+}
+
+/* ---------- sync ---------- */
+async function fetchSync(){
+  const url=document.getElementById('syncurl').value.trim();
+  const m=document.getElementById('syncmsg');
+  if(!url){m.innerHTML='<span style="color:var(--red)">URL을 입력하세요</span>';return;}
+  localStorage.setItem('stage_url',url);
+  m.innerHTML='<span style="color:var(--dim)">불러오는 중...</span>';
+  try{
+    const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now());
+    const j=await r.json();
+    applyData(j);
+    m.innerHTML='<span style="color:var(--s2)">✓ 에이전트 데이터 적용됨</span>';
+  }catch(e){m.innerHTML='<span style="color:var(--red)">✗ 실패: '+e.message+' (URL·공개여부 확인)</span>';}
+}
+function loadPasted(){
+  const t=document.getElementById('pastejson').value.trim();
+  const m=document.getElementById('syncmsg');
+  if(!t)return;
+  try{applyData(JSON.parse(t));m.innerHTML='<span style="color:var(--s2)">✓ JSON 적용됨</span>';}
+  catch(e){m.innerHTML='<span style="color:var(--red)">✗ JSON 파싱 오류</span>';}
+}
+function applyData(j){
+  if(!j||!Array.isArray(j.holdings))throw new Error('holdings 없음');
+  data=Object.assign(JSON.parse(JSON.stringify(DEFAULT)),j);
+  if(!j.updated)data.updated=new Date().toLocaleString('ko-KR');
+  save();render();
+}
+function exportJson(){
+  const s=JSON.stringify(data,null,2);
+  const m=document.getElementById('expmsg');
+  if(navigator.clipboard){navigator.clipboard.writeText(s).then(()=>m.innerHTML='<span style="color:var(--s2)">✓ 클립보드에 복사됨</span>');}
+  else{document.getElementById('pastejson').value=s;m.innerHTML='<span style="color:var(--s2)">아래 칸에 출력됨</span>';}
+}
+function resetData(){if(confirm('기본 전략 포트로 복원?')){data=JSON.parse(JSON.stringify(DEFAULT));save();render();document.getElementById('expmsg').innerHTML='<span style="color:var(--s2)">복원됨</span>';}}
+
+/* init */
+const su=localStorage.getItem('stage_url');
+if(su){document.getElementById('syncurl').value=su;fetchSync();}   // 열 때 자동 최신화
+render();
+// 열려있는 동안 5분마다 자동 갱신
+setInterval(()=>{const u=localStorage.getItem('stage_url');if(u)fetchSync();},300000);
+</script>
+</body>
+</html>
